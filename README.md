@@ -2,7 +2,7 @@
 
 Generated app for:
 
-> Enhance the previous JSON table by adding a 'Toggle Theme' button that switches between light and dark modes with smooth transitions.
+> Update the previous JSON table page (from Round 1). Keep the same rates.json structure and display each currency and rate in a table (#currency-table). Add a 'Toggle Theme' button that switches between light and dark modes using inline CSS and JS, preserving the table display.
 
 ---
 MIT License
