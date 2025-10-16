@@ -9,84 +9,93 @@
             font-family: Arial, sans-serif;
             margin: 0;
             padding: 20px;
+            background-color: #f4f4f4;
+            color: #333;
             transition: background-color 0.3s, color 0.3s;
         }
         table {
             width: 100%;
             border-collapse: collapse;
-            margin-top: 20px;
+            margin-bottom: 20px;
         }
         th, td {
-            border: 1px solid #ccc;
             padding: 10px;
+            border: 1px solid #ddd;
             text-align: left;
         }
         th {
-            background-color: #f4f4f4;
+            background-color: #007bff;
+            color: white;
         }
-        .dark-mode {
+        .dark-theme {
             background-color: #333;
-            color: #fff;
+            color: #f4f4f4;
         }
-        .dark-mode th {
-            background-color: #444;
+        .dark-theme th {
+            background-color: #555;
         }
         button {
             margin-bottom: 20px;
-            padding: 10px 15px;
-            cursor: pointer;
         }
     </style>
 </head>
 <body>
+
     <button id="toggle-theme">Toggle Theme</button>
-    <div id="currency-table-container">
-        <table id="currency-table">
-            <thead>
-                <tr>
-                    <th>Currency</th>
-                    <th>Rate</th>
-                </tr>
-            </thead>
-            <tbody id="currency-table-body">
-                <tr>
-                    <td colspan="2">Loading data...</td>
-                </tr>
-            </tbody>
-        </table>
-        <div id="error-message" style="color: red; display: none;">Failed to load data.</div>
-    </div>
+    <table id="currency-table">
+        <thead>
+            <tr>
+                <th>Currency</th>
+                <th>Exchange Rate</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td colspan="2">Loading data...</td>
+            </tr>
+        </tbody>
+    </table>
+    <p id="summary"></p>
 
     <script>
         const toggleThemeButton = document.getElementById('toggle-theme');
         const body = document.body;
-        const currencyTableBody = document.getElementById('currency-table-body');
-        const errorMessage = document.getElementById('error-message');
+        const currencyTable = document.getElementById('currency-table').getElementsByTagName('tbody')[0];
+        const summary = document.getElementById('summary');
 
         toggleThemeButton.addEventListener('click', () => {
-            body.classList.toggle('dark-mode');
+            body.classList.toggle('dark-theme');
         });
 
-        fetch('https://example.com/rates.json') // Replace with the actual URL of your rates.json
+        fetch('./rates.json')
             .then(response => {
                 if (!response.ok) throw new Error('Network response was not ok');
                 return response.json();
             })
             .then(data => {
-                currencyTableBody.innerHTML = '';
-                for (const [currency, rate] of Object.entries(data)) {
-                    const row = document.createElement('tr');
-                    row.innerHTML = `<td>${currency}</td><td>${new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(parseFloat(rate))}</td>`;
-                    currencyTableBody.appendChild(row);
-                }
+                currencyTable.innerHTML = '';
+                let totalRate = 0;
+                let currencyCount = data.length;
+
+                data.forEach(currency => {
+                    const row = currencyTable.insertRow();
+                    const cell1 = row.insertCell(0);
+                    const cell2 = row.insertCell(1);
+                    cell1.textContent = currency.name;
+                    cell2.textContent = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(parseFloat(currency.rate));
+                    totalRate += parseFloat(currency.rate);
+                });
+
+                const averageRate = totalRate / currencyCount;
+                summary.textContent = `Total currencies: ${currencyCount}, Average exchange rate: ${new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(averageRate)}`;
             })
             .catch(error => {
+                currencyTable.innerHTML = '<tr><td colspan="2">Failed to load data.</td></tr>';
                 console.error('There was a problem with the fetch operation:', error);
-                errorMessage.style.display = 'block';
-                currencyTableBody.innerHTML = ''; // Clear the loading message
             });
     </script>
-    <!-- build-id: 2023-10-01T12:00:00Z -->
+
+    <!-- build-id: 2023-10-04T12:00:00Z -->
 
         <script>
         // 🔄 Universal JSON handler
@@ -119,4 +128,4 @@
         </script>
         </body>
 </html>
-<!-- build-id: 2025-10-16T12:27:24.589563 -->
+<!-- build-id: 2025-10-16T12:39:12.138656 -->
