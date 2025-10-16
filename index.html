@@ -3,129 +3,118 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Currency Rates</title>
+    <title>Currency Data Table</title>
     <style>
         body {
             font-family: Arial, sans-serif;
             margin: 0;
             padding: 20px;
-            background-color: #f4f4f4;
-            color: #333;
             transition: background-color 0.3s, color 0.3s;
+        }
+        body.light {
+            background-color: #ffffff;
+            color: #000000;
+        }
+        body.dark {
+            background-color: #333333;
+            color: #ffffff;
         }
         table {
             width: 100%;
             border-collapse: collapse;
-            margin-bottom: 20px;
+            margin-top: 20px;
         }
         th, td {
-            padding: 10px;
-            border: 1px solid #ddd;
+            border: 1px solid #dddddd;
             text-align: left;
+            padding: 8px;
         }
         th {
-            background-color: #007bff;
-            color: white;
+            background-color: #f2f2f2;
         }
-        .dark-theme {
-            background-color: #333;
-            color: #f4f4f4;
-        }
-        .dark-theme th {
-            background-color: #555;
-        }
-        button {
+        #theme-toggle {
             margin-bottom: 20px;
+            padding: 10px;
+            cursor: pointer;
         }
     </style>
 </head>
-<body>
-
-    <button id="toggle-theme">Toggle Theme</button>
-    <table id="currency-table">
-        <thead>
-            <tr>
-                <th>Currency</th>
-                <th>Exchange Rate</th>
-            </tr>
-        </thead>
-        <tbody>
-            <tr>
-                <td colspan="2">Loading data...</td>
-            </tr>
-        </tbody>
-    </table>
-    <p id="summary"></p>
-
+<body class="light">
+    <button id="theme-toggle">Toggle Theme</button>
+    <div id="data-output"></div>
+    <div id="markdown-output"></div>
+    <div id="fallback" style="display: none;">Failed to load data.</div>
+    <footer><!-- build-id: 2023-10-03T12:00:00Z --></footer>
+    
     <script>
-        const toggleThemeButton = document.getElementById('toggle-theme');
-        const body = document.body;
-        const currencyTable = document.getElementById('currency-table').getElementsByTagName('tbody')[0];
-        const summary = document.getElementById('summary');
+        const dataUrl = './data.json';
+        const markdownUrl = './input.md';
 
-        toggleThemeButton.addEventListener('click', () => {
-            body.classList.toggle('dark-theme');
-        });
-
-        fetch('./rates.json')
-            .then(response => {
-                if (!response.ok) throw new Error('Network response was not ok');
-                return response.json();
-            })
-            .then(data => {
-                currencyTable.innerHTML = '';
-                let totalRate = 0;
-                let currencyCount = data.length;
-
-                data.forEach(currency => {
-                    const row = currencyTable.insertRow();
-                    const cell1 = row.insertCell(0);
-                    const cell2 = row.insertCell(1);
-                    cell1.textContent = currency.name;
-                    cell2.textContent = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(parseFloat(currency.rate));
-                    totalRate += parseFloat(currency.rate);
-                });
-
-                const averageRate = totalRate / currencyCount;
-                summary.textContent = `Total currencies: ${currencyCount}, Average exchange rate: ${new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(averageRate)}`;
-            })
-            .catch(error => {
-                currencyTable.innerHTML = '<tr><td colspan="2">Failed to load data.</td></tr>';
-                console.error('There was a problem with the fetch operation:', error);
-            });
-    </script>
-
-    <!-- build-id: 2023-10-04T12:00:00Z -->
-
-        <script>
-        // 🔄 Universal JSON handler
-        async function handleJSON() {
+        async function fetchData() {
             try {
-                const res = await fetch('./rates.json');
-                if (!res.ok) throw new Error('No rates.json found, checking products.json');
-                const data = await res.json();
-                let total = 0;
-                if (Array.isArray(data)) {
-                    data.forEach(item => {
-                        for (const key in item) {
-                            const val = parseFloat(item[key]);
-                            if (!isNaN(val)) total += val;
-                        }
-                    });
-                } else {
-                    for (const key in data) {
-                        const val = parseFloat(data[key]);
-                        if (!isNaN(val)) total += val;
-                    }
-                }
-                const el = document.querySelector('#total-sales') || document.querySelector('#total-json');
-                if (el) el.textContent = 'Total (JSON): $' + total.toFixed(2);
-            } catch (e) {
-                console.error('JSON parse failed', e);
+                const response = await fetch(dataUrl);
+                if (!response.ok) throw new Error('Network response was not ok');
+                const data = await response.json();
+                renderData(data);
+            } catch (error) {
+                document.getElementById('data-output').style.display = 'none';
+                document.getElementById('fallback').style.display = 'block';
             }
         }
-        document.addEventListener('DOMContentLoaded', handleJSON);
-        </script>
-        </body>
+
+        function renderData(data) {
+            const table = document.createElement('table');
+            const headerRow = document.createElement('tr');
+            headerRow.innerHTML = '<th>Currency</th><th>Amount</th><th>Rate</th>';
+            table.appendChild(headerRow);
+
+            let totalAmount = 0;
+            let totalRate = 0;
+
+            data.forEach(item => {
+                const row = document.createElement('tr');
+                const amount = parseFloat(item.amount);
+                const rate = parseFloat(item.rate);
+                totalAmount += amount;
+                totalRate += rate;
+
+                row.innerHTML = `<td>${item.currency}</td>
+                                 <td>${Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(amount)}</td>
+                                 <td>${rate.toFixed(2)}</td>`;
+                table.appendChild(row);
+            });
+
+            const totalRow = document.createElement('tr');
+            totalRow.innerHTML = `<td>Total</td>
+                                  <td>${Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(totalAmount)}</td>
+                                  <td>${(totalRate / data.length).toFixed(2)}</td>`;
+            table.appendChild(totalRow);
+
+            document.getElementById('data-output').appendChild(table);
+        }
+
+        async function fetchMarkdown() {
+            try {
+                const response = await fetch(markdownUrl);
+                if (!response.ok) throw new Error('Network response was not ok');
+                const text = await response.text();
+                document.getElementById('markdown-output').innerHTML = text.replace(/(^|\n)(#{1,6})\s*(.+)/g, (match, p1, p2, p3) => {
+                    const level = p2.length;
+                    return `${p1}<h${level}>${p3}</h${level}>`;
+                });
+            } catch (error) {
+                document.getElementById('markdown-output').innerHTML = 'Failed to load markdown.';
+            }
+        }
+
+        document.getElementById('theme-toggle').addEventListener('click', () => {
+            document.body.classList.toggle('dark');
+            document.body.classList.toggle('light');
+        });
+
+        fetchData();
+        fetchMarkdown();
+    </script>
+</body>
 </html>
-<!-- build-id: 2025-10-16T12:39:12.138656 -->
+<!-- build-id: 2025-10-16T12:47:34.621546 -->
